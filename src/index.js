@@ -12,7 +12,6 @@ app.use(cors());
 
 async function convertMarkdownToGoogleDoc(markdownContent, accessToken, fileName = 'Converted from Markdown') {
   try {
-    // Create OAuth2 client with the access token only
     const auth = new google.auth.OAuth2();
     auth.setCredentials({
       access_token: accessToken,
@@ -26,8 +25,11 @@ async function convertMarkdownToGoogleDoc(markdownContent, accessToken, fileName
     
     console.log('Creating document:', { fileName, tokenPrefix: accessToken.substring(0, 10) + '...' });
     
-    // Parse the markdown
-    const tokens = marked.lexer(markdownContent);
+    // Parse the markdown with specific options
+    const tokens = marked.lexer(markdownContent, {
+      gfm: true,
+      breaks: true
+    });
     
     const createResponse = await docs.documents.create({
       requestBody: {
@@ -42,81 +44,75 @@ async function convertMarkdownToGoogleDoc(markdownContent, accessToken, fileName
     let currentIndex = 1;  // Start at 1 since index 0 is reserved
 
     for (const token of tokens) {
+      console.log('Processing token:', { type: token.type, text: token.text?.substring(0, 50) + '...' });
+      
       switch (token.type) {
-        case 'heading':
+        case 'heading': {
+          // Handle section headers with quotes
+          const text = token.text.replace(/^["']|["']$/g, '');
           requests.push({
             insertText: {
               location: { index: currentIndex },
-              text: token.text + '\n',
+              text: text + '\n',
             },
           });
+
+          // Apply heading style
           requests.push({
             updateParagraphStyle: {
               range: {
                 startIndex: currentIndex,
-                endIndex: currentIndex + token.text.length,
+                endIndex: currentIndex + text.length,
               },
               paragraphStyle: {
                 namedStyleType: `HEADING_${token.depth}`,
+                spaceAbove: { magnitude: 10, unit: 'PT' },
+                spaceBelow: { magnitude: 5, unit: 'PT' },
               },
-              fields: 'namedStyleType',
+              fields: 'namedStyleType,spaceAbove,spaceBelow',
             },
           });
-          currentIndex += token.text.length + 1;
+
+          // Make the heading bold
+          requests.push({
+            updateTextStyle: {
+              range: {
+                startIndex: currentIndex,
+                endIndex: currentIndex + text.length,
+              },
+              textStyle: { bold: true },
+              fields: 'bold',
+            },
+          });
+
+          currentIndex += text.length + 1;
           break;
+        }
 
         case 'paragraph': {
           // Get the raw text and tokens
           const rawText = token.raw;
           const cleanText = token.text;
           
-          const insertRequest = {
+          // Handle quoted text (text between quotes)
+          const quotedText = cleanText.match(/"([^"]+)"/g);
+          let textToInsert = cleanText;
+          
+          requests.push({
             insertText: {
               location: { index: currentIndex },
-              text: cleanText + '\n',
+              text: textToInsert + '\n',
             },
-          };
-          requests.push(insertRequest);
-
-          // Helper function to find all matches with their positions
-          function findFormattedRanges(text, pattern) {
-            const ranges = [];
-            let match;
-            const regex = new RegExp(pattern, 'g');
-            while ((match = regex.exec(text)) !== null) {
-              ranges.push({
-                text: match[1],
-                index: match.index,
-                length: match[1].length,
-                fullMatch: match[0]
-              });
-            }
-            return ranges;
-          }
+          });
 
           // Find all bold and italic ranges
           const boldRanges = findFormattedRanges(rawText, '\\*\\*([^*]+)\\*\\*');
           const italicRanges = findFormattedRanges(rawText, '\\*([^*]+)\\*');
 
-          // Calculate actual positions in clean text
-          function getCleanTextPosition(originalIndex, matchText, ranges) {
-            let position = originalIndex;
-            
-            // Count markdown symbols before this position
-            for (const range of ranges) {
-              if (range.index < originalIndex) {
-                // For bold (**) subtract 4, for italic (*) subtract 2
-                position -= range.fullMatch.length - range.length;
-              }
-            }
-            
-            return Math.max(0, position);
-          }
-
           // Apply bold formatting
           for (const bold of boldRanges) {
             const startPos = getCleanTextPosition(bold.index, bold.text, [...boldRanges, ...italicRanges]);
-            if (startPos >= 0 && startPos + bold.length <= cleanText.length) {
+            if (startPos >= 0 && startPos + bold.length <= textToInsert.length) {
               requests.push({
                 updateTextStyle: {
                   range: {
@@ -133,7 +129,7 @@ async function convertMarkdownToGoogleDoc(markdownContent, accessToken, fileName
           // Apply italic formatting
           for (const italic of italicRanges) {
             const startPos = getCleanTextPosition(italic.index, italic.text, [...boldRanges, ...italicRanges]);
-            if (startPos >= 0 && startPos + italic.length <= cleanText.length) {
+            if (startPos >= 0 && startPos + italic.length <= textToInsert.length) {
               requests.push({
                 updateTextStyle: {
                   range: {
@@ -147,31 +143,98 @@ async function convertMarkdownToGoogleDoc(markdownContent, accessToken, fileName
             }
           }
 
-          currentIndex += cleanText.length + 1;
+          // Apply paragraph spacing
+          requests.push({
+            updateParagraphStyle: {
+              range: {
+                startIndex: currentIndex,
+                endIndex: currentIndex + textToInsert.length,
+              },
+              paragraphStyle: {
+                spaceAbove: { magnitude: 5, unit: 'PT' },
+                spaceBelow: { magnitude: 5, unit: 'PT' },
+                lineSpacing: 115
+              },
+              fields: 'spaceAbove,spaceBelow,lineSpacing',
+            },
+          });
+
+          currentIndex += textToInsert.length + 1;
           break;
         }
 
-        case 'list':
+        case 'list': {
           for (const item of token.items) {
+            const itemText = item.text;
             requests.push({
               insertText: {
                 location: { index: currentIndex },
-                text: item.text + '\n',
+                text: itemText + '\n',
               },
             });
+
+            // Apply bullet style
             requests.push({
               createParagraphBullets: {
                 range: {
                   startIndex: currentIndex,
-                  endIndex: currentIndex + item.text.length,
+                  endIndex: currentIndex + itemText.length,
                 },
                 bulletPreset: 'BULLET_DISC_CIRCLE_SQUARE',
               },
             });
-            currentIndex += item.text.length + 1;
+
+            // Apply list item spacing
+            requests.push({
+              updateParagraphStyle: {
+                range: {
+                  startIndex: currentIndex,
+                  endIndex: currentIndex + itemText.length,
+                },
+                paragraphStyle: {
+                  indentStart: { magnitude: 36, unit: 'PT' },
+                  spaceAbove: { magnitude: 2, unit: 'PT' },
+                  spaceBelow: { magnitude: 2, unit: 'PT' },
+                },
+                fields: 'indentStart,spaceAbove,spaceBelow',
+              },
+            });
+
+            currentIndex += itemText.length + 1;
           }
           break;
+        }
       }
+    }
+
+    // Helper function to find formatted ranges
+    function findFormattedRanges(text, pattern) {
+      const ranges = [];
+      let match;
+      const regex = new RegExp(pattern, 'g');
+      while ((match = regex.exec(text)) !== null) {
+        ranges.push({
+          text: match[1],
+          index: match.index,
+          length: match[1].length,
+          fullMatch: match[0]
+        });
+      }
+      return ranges;
+    }
+
+    // Helper function to calculate clean text position
+    function getCleanTextPosition(originalIndex, matchText, ranges) {
+      let position = originalIndex;
+      
+      // Count markdown symbols before this position
+      for (const range of ranges) {
+        if (range.index < originalIndex) {
+          position -= range.fullMatch.length - range.length;
+        }
+      }
+      
+      return Math.max(0, position);
     }
 
     // Apply the formatting

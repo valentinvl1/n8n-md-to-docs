@@ -176,3 +176,18 @@ dist
 
 # Google Docs API credentials
 credentials.json
+
+# New line for firebase-debug.log
+firebase-debug.log
+
+# Firebase
+.firebase/
+
+# Build output
+lib/
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env

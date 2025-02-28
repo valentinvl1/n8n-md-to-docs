@@ -5,7 +5,7 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./lib --target node",
+    "build": "bun build ./src/index.ts --outdir ./lib --target node && cp package.json lib/",
     "build:watch": "bun build ./src/index.ts --outdir ./lib --target node --watch",
     "serve": "bun run build && firebase emulators:start",
     "shell": "bun run build && firebase functions:shell",
@@ -15,7 +15,7 @@
     "dev": "bun --watch src/index.ts"
   },
   "engines": {
-    "bun": ">=1.0.0"
+    "node": "22"
   },
   "dependencies": {
     "cors": "^2.8.5",

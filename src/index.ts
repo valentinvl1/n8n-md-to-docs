@@ -99,7 +99,7 @@ app.post('/', async (req: Request, res: Response) => {
     }
 
     logger.info('Sending multiple responses:', results.length);
-    res.json(results);
+    return res.json(results);
 
   } catch (error: any) {
     logger.error('Fatal error processing requests:', {
@@ -107,7 +107,7 @@ app.post('/', async (req: Request, res: Response) => {
       stack: error.stack
     });
     
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to process requests',
       details: error.message
     } as ErrorResponse);

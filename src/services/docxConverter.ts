@@ -41,10 +41,14 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             if (part.startsWith('**') && part.endsWith('**')) {
               return new TextRun({
                 text: part.slice(2, -2),
-                bold: true
+                bold: true,
+                font: 'Arial'
               });
             }
-            return new TextRun(part);
+            return new TextRun({
+              text: part,
+              font: 'Arial'
+            });
           });
 
           children.push(
@@ -67,10 +71,14 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
               if (part.startsWith('**') && part.endsWith('**')) {
                 return new TextRun({
                   text: part.slice(2, -2),
-                  bold: true
+                  bold: true,
+                  font: 'Arial'
                 });
               }
-              return new TextRun(part);
+              return new TextRun({
+                text: part,
+                font: 'Arial'
+              });
             });
 
             children.push(
@@ -95,11 +103,18 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
     const doc = new Document({
       styles: {
         default: {
+          document: {
+            run: {
+              font: 'Arial',
+              size: 24
+            }
+          },
           heading1: {
             run: {
               size: 32,
               bold: true,
-              color: "000000"
+              color: "000000",
+              font: 'Arial'
             },
             paragraph: {
               spacing: {
@@ -112,7 +127,8 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             run: {
               size: 28,
               bold: true,
-              color: "000000"
+              color: "000000",
+              font: 'Arial'
             },
             paragraph: {
               spacing: {
@@ -125,7 +141,8 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             run: {
               size: 24,
               bold: true,
-              color: "000000"
+              color: "000000",
+              font: 'Arial'
             },
             paragraph: {
               spacing: {

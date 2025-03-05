@@ -17,17 +17,40 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
     // Parse markdown to tokens
     const tokens = marked.lexer(markdownContent);
     const children: Paragraph[] = [];
+    let lastTokenType: string | null = null;
+    let consecutiveBreaks = 0;
     
     for (const token of tokens) {
+      // Handle spacing between different content types
+      if (lastTokenType && lastTokenType !== token.type) {
+        if (token.type === 'space') {
+          consecutiveBreaks++;
+          // Only add extra space if we haven't added too many breaks already
+          if (consecutiveBreaks <= 1) {
+            children.push(
+              new Paragraph({
+                spacing: {
+                  before: 80,
+                  after: 80
+                }
+              })
+            );
+          }
+        } else {
+          consecutiveBreaks = 0;
+        }
+      }
+
       switch (token.type) {
         case 'heading': {
+          consecutiveBreaks = 0;
           children.push(
             new Paragraph({
               text: token.text,
               heading: headingLevelMap[token.depth as keyof typeof headingLevelMap],
               spacing: {
                 before: 200,
-                after: 200
+                after: 100
               }
             })
           );
@@ -35,6 +58,7 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
         }
 
         case 'paragraph': {
+          consecutiveBreaks = 0;
           // Handle bold text
           const parts = token.text.split(/(\*\*.*?\*\*)/g);
           const runs: TextRun[] = parts.map((part: string) => {
@@ -42,12 +66,14 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
               return new TextRun({
                 text: part.slice(2, -2),
                 bold: true,
-                font: 'Arial'
+                font: 'Arial',
+                size: 24
               });
             }
             return new TextRun({
               text: part,
-              font: 'Arial'
+              font: 'Arial',
+              size: 24
             });
           });
 
@@ -55,8 +81,10 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             new Paragraph({
               children: runs,
               spacing: {
-                before: 120,
-                after: 120
+                before: 60,
+                after: 60,
+                line: 300,
+                lineRule: 'auto'
               }
             })
           );
@@ -64,6 +92,8 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
         }
 
         case 'list': {
+          consecutiveBreaks = 0;
+          let isFirstItem = true;
           for (const item of token.items) {
             // Handle bold text in list items
             const parts = item.text.split(/(\*\*.*?\*\*)/g);
@@ -72,12 +102,14 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
                 return new TextRun({
                   text: part.slice(2, -2),
                   bold: true,
-                  font: 'Arial'
+                  font: 'Arial',
+                  size: 24
                 });
               }
               return new TextRun({
                 text: part,
-                font: 'Arial'
+                font: 'Arial',
+                size: 24
               });
             });
 
@@ -88,15 +120,32 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
                   level: 0
                 },
                 spacing: {
-                  before: 80,
-                  after: 80
+                  before: isFirstItem ? 80 : 40,
+                  after: 40,
+                  line: 300,
+                  lineRule: 'auto'
+                },
+                indent: {
+                  left: 720,
+                  hanging: 360
                 }
               })
             );
+            isFirstItem = false;
           }
           break;
         }
+
+        case 'space':
+          // Don't reset consecutiveBreaks here
+          break;
+
+        default:
+          consecutiveBreaks = 0;
+          break;
       }
+
+      lastTokenType = token.type;
     }
 
     // Create document with some basic styling
@@ -118,8 +167,10 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             },
             paragraph: {
               spacing: {
-                before: 240,
-                after: 120
+                before: 200,
+                after: 100,
+                line: 300,
+                lineRule: 'auto'
               }
             }
           },
@@ -132,8 +183,10 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             },
             paragraph: {
               spacing: {
-                before: 240,
-                after: 120
+                before: 160,
+                after: 80,
+                line: 300,
+                lineRule: 'auto'
               }
             }
           },
@@ -146,8 +199,10 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             },
             paragraph: {
               spacing: {
-                before: 240,
-                after: 120
+                before: 120,
+                after: 60,
+                line: 300,
+                lineRule: 'auto'
               }
             }
           }

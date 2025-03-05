@@ -1,9 +1,8 @@
 import { google } from 'googleapis';
 import { logger } from 'firebase-functions/v2';
-import { marked } from 'marked';
-import type { Token } from 'marked';
 import type { GoogleDocResponse } from '../types';
-import { formatMarkdownToken } from '../utils/markdownFormatter.js';
+import { convertMarkdownToDocx } from './docxConverter';
+import { Readable } from 'stream';
 
 export async function convertMarkdownToGoogleDoc(
   markdownContent: string, 
@@ -17,43 +16,44 @@ export async function convertMarkdownToGoogleDoc(
       token_type: 'Bearer'
     });
 
-    const docs = google.docs({ 
-      version: 'v1', 
-      auth
-    });
-    
-    logger.info('Creating document:', { fileName, tokenPrefix: accessToken.substring(0, 10) + '...' });
-    
-    // Parse the markdown with specific options
-    const tokens = marked.lexer(markdownContent, {
-      gfm: true,
-      breaks: true
-    });
-    
-    const createResponse = await docs.documents.create({
-      requestBody: {
-        title: fileName,
-      }
+    // First convert markdown to docx using pandoc
+    const docxBuffer = await convertMarkdownToDocx(markdownContent);
+
+    // Initialize Google Drive API
+    const drive = google.drive({ 
+      version: 'v3', 
+      auth 
     });
 
-    const documentId = createResponse.data.documentId;
+    logger.info('Uploading document:', { fileName, tokenPrefix: accessToken.substring(0, 10) + '...' });
+    
+    // Create a readable stream from the buffer
+    const stream = Readable.from(docxBuffer);
+
+    // Upload the docx file to Google Drive
+    const fileMetadata = {
+      name: fileName,
+      mimeType: 'application/vnd.google-apps.document' // This converts to Google Docs format
+    };
+
+    const media = {
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      body: stream
+    };
+
+    const response = await drive.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id'
+    });
+
+    const documentId = response.data.id;
     if (!documentId) {
       throw new Error('Failed to create document: No document ID returned');
     }
-    logger.info('Document created with ID:', documentId);
-
-    const requests = formatMarkdownToken(tokens);
-    logger.info('Applying formatting with requests:', requests.length);
-    
-    await docs.documents.batchUpdate({
-      documentId: documentId,
-      requestBody: {
-        requests
-      }
-    });
 
     const documentUrl = `https://docs.google.com/document/d/${documentId}`;
-    logger.info('Document formatted successfully:', documentUrl);
+    logger.info('Document created successfully:', documentUrl);
 
     return {
       documentId,

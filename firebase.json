@@ -10,5 +10,22 @@
     "ui": {
       "enabled": true
     }
+  },
+  "hosting": {
+    "site": "md2doc-n8n-aemalsayer-docs",
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/.well-known/acme-challenge/**",
+        "destination": "/.well-known/acme-challenge/**"
+      },
+      {
+        "source": "**",
+        "function": {
+          "functionId": "mdToGoogleDoc",
+          "region": "us-central1"
+        }
+      }
+    ]
   }
 } 

@@ -22,6 +22,7 @@ app.post('/', async (req: Request, res: Response) => {
       }
     });
 
+    console.log("aaa testing")
     // Handle array of requests
     const requests: MarkdownRequest[] = Array.isArray(req.body) ? req.body : [req.body];
     logger.info(`Processing ${requests.length} request(s)`);

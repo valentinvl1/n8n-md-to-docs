@@ -71,19 +71,39 @@ firebase init functions
 
 ## Usage in n8n
 
-1. Use the HTTP Request node in n8n
-2. Set method to POST
-3. Set URL to `https://md2doc.n8n.aemalsayer.com`
-4. Add headers:
-   - `Content-Type: application/json`
-   - `Authorization: Bearer YOUR_GOOGLE_OAUTH_TOKEN`
-5. Set body to:
+### 1. Configure HTTP Request Node
+
+Add an HTTP Request node and configure it as follows:
+
+![HTTP Request Node Configuration](.github/assets/screen1.png)
+
+1. Method: `POST`
+2. URL: `https://md2doc.n8n.aemalsayer.com`
+3. Authentication: 
+   - Predefined Credential Type
+   - Credential Type: `Google Docs OAuth2 API`
+   - Select your Google Docs account
+
+### 2. Configure Request Body
+
+![Request Body Configuration](.github/assets/screen2.png)
+
+Set up the body parameters:
+
 ```json
 {
-    "output": "{{$node.yourLLMNode.json.output}}",
-    "fileName": "Generated Document"
+  "output": "{{$json.output}}",
+  "fileName": "Notes {{$now}}"
 }
 ```
+
+Key Configuration Points:
+- Body Content Type: `JSON`
+- Send Body: `Enabled`
+- Specify Body: `Using Fields Below`
+- Parameters:
+  1. `output`: Your markdown content (usually from an LLM node)
+  2. `fileName`: Name for the generated Google Doc (supports expressions)
 
 The service will return a response with the Google Doc URL and ID.
 
@@ -94,6 +114,7 @@ This project is maintained by [Aemal Sayer](https://aemalsayer.com), a freelance
 ### Get in Touch
 - Website: [aemalsayer.com](https://aemalsayer.com)
 - Location: Berlin, Germany
+- WhatsApp: +49 176 610 94 196
 
 ## License
 

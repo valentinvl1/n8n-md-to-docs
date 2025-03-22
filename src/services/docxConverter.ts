@@ -56,9 +56,23 @@ function processFormattedText(text: string): TextRun[] {
 
 export async function convertMarkdownToDocx(markdownContent: string): Promise<Buffer> {
   try {
+    // Log sample of the markdown for debugging
+    logger.info('Input markdown sample:', {
+      sample: markdownContent.substring(0, Math.min(200, markdownContent.length)),
+      length: markdownContent.length
+    });
+
     // Parse markdown to tokens
     const tokens = marked.lexer(markdownContent);
     logger.info(`Parsed ${tokens.length} markdown tokens`);
+    
+    // Debug first few tokens to understand the structure
+    if (tokens.length > 0) {
+      logger.info('First token types:', {
+        types: tokens.slice(0, Math.min(5, tokens.length)).map(t => t.type)
+      });
+    }
+    
     const children: Paragraph[] = [];
     let lastTokenType: string | null = null;
     let consecutiveBreaks = 0;

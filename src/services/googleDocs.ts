@@ -16,6 +16,15 @@ export async function convertMarkdownToGoogleDoc(
       sampleMarkdown: markdownContent.substring(0, 100) // Log sample of markdown for debugging
     });
     
+    // Strip markdown code block wrapper if present
+    if (markdownContent.startsWith('```markdown\n') && markdownContent.endsWith('```')) {
+      logger.info('Removing markdown code block wrapper');
+      markdownContent = markdownContent.substring('```markdown\n'.length, markdownContent.length - 3);
+    } else if (markdownContent.startsWith('```\n') && markdownContent.endsWith('```')) {
+      logger.info('Removing generic code block wrapper');
+      markdownContent = markdownContent.substring('```\n'.length, markdownContent.length - 3);
+    }
+    
     const auth = new google.auth.OAuth2();
     auth.setCredentials({
       access_token: accessToken,

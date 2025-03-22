@@ -5,6 +5,7 @@ import cors from 'cors';
 import type { Request, Response } from 'express';
 import type { MarkdownRequest, GoogleDocResponse, ErrorResponse } from './types';
 import { convertMarkdownToGoogleDoc } from './services/googleDocs';
+import { convertMarkdownToDocx } from './services/docxConverter';
 
 const app = express();
 
@@ -114,4 +115,48 @@ app.post('/', async (req: Request, res: Response) => {
   }
 });
 
-export const mdToGoogleDoc = onRequest(app); 
+// Add a test endpoint for debugging conversion issues
+app.post('/test', async (req: Request, res: Response) => {
+  try {
+    logger.info('Received test request');
+    
+    const { markdown, fileName } = req.body;
+    if (!markdown) {
+      return res.status(400).json({ error: 'Missing markdown content' });
+    }
+    
+    // Don't require auth for test endpoint (only in development)
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info('Test conversion:', {
+        markdownSample: markdown.substring(0, 100),
+        markdownLength: markdown.length
+      });
+      
+      const result = await convertMarkdownToDocx(markdown);
+      logger.info('Test conversion complete', {
+        resultSize: result.length
+      });
+      
+      // Return the DOCX buffer directly for testing
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName || 'test.docx'}"`);
+      return res.send(Buffer.from(result));
+    } else {
+      return res.status(403).json({ error: 'Test endpoint not available in production' });
+    }
+  } catch (error: any) {
+    logger.error('Error in test endpoint:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Export the function with increased memory allocation for v2
+export const mdToGoogleDoc = onRequest({
+  memory: '1GiB', // Increase memory from default 256MB to 1GB
+  timeoutSeconds: 300, // Also increase timeout to 5 minutes (default is 60s)
+  region: 'us-central1', // Explicitly set region
+  concurrency: 30, // Limit concurrent executions to 30
+  minInstances: 0, // No minimum instances
+  maxInstances: 50, // Maximum 50 instances
+  cors: true // Enable CORS
+}, app); 

@@ -9,7 +9,7 @@ export async function convertMarkdownToGoogleDoc(
   fileName: string = 'Converted from Markdown'
 ): Promise<GoogleDocResponse> {
   try {
-    logger.info('Starting markdown to Google Doc conversion', { 
+    console.info('Starting markdown to Google Doc conversion', { 
       markdownLength: markdownContent.length,
       fileName,
       sampleMarkdown: markdownContent.substring(0, 100) // Log sample of markdown for debugging
@@ -17,10 +17,10 @@ export async function convertMarkdownToGoogleDoc(
     
     // Strip markdown code block wrapper if present
     if (markdownContent.startsWith('```markdown\n') && markdownContent.endsWith('```')) {
-      logger.info('Removing markdown code block wrapper');
+      console.info('Removing markdown code block wrapper');
       markdownContent = markdownContent.substring('```markdown\n'.length, markdownContent.length - 3);
     } else if (markdownContent.startsWith('```\n') && markdownContent.endsWith('```')) {
-      logger.info('Removing generic code block wrapper');
+      console.info('Removing generic code block wrapper');
       markdownContent = markdownContent.substring('```\n'.length, markdownContent.length - 3);
     }
     
@@ -31,9 +31,9 @@ export async function convertMarkdownToGoogleDoc(
     });
 
     // First convert markdown to docx using our converter
-    logger.info('Converting markdown to DOCX buffer');
+    console.info('Converting markdown to DOCX buffer');
     const docxBuffer = await convertMarkdownToDocx(markdownContent);
-    logger.info('DOCX conversion complete', { docxSize: docxBuffer.length });
+    console.info('DOCX conversion complete', { docxSize: docxBuffer.length });
     
     if (!docxBuffer || docxBuffer.length === 0) {
       throw new Error('DOCX conversion failed - empty buffer returned');
@@ -45,7 +45,7 @@ export async function convertMarkdownToGoogleDoc(
       auth 
     });
 
-    logger.info('Uploading document to Google Drive', { 
+    console.info('Uploading document to Google Drive', { 
       fileName, 
       tokenPrefix: accessToken.substring(0, 10) + '...',
       bufferSize: docxBuffer.length
@@ -78,7 +78,7 @@ export async function convertMarkdownToGoogleDoc(
       }
 
       const documentUrl = `https://docs.google.com/document/d/${documentId}`;
-      logger.info('Document created successfully', { 
+      console.info('Document created successfully', { 
         documentId, 
         documentUrl, 
         fileName 
@@ -91,13 +91,13 @@ export async function convertMarkdownToGoogleDoc(
           fields: 'id,name,mimeType,size'
         });
         
-        logger.info('Document verification', {
+        console.info('Document verification', {
           name: docResult.data.name,
           mimeType: docResult.data.mimeType,
           size: docResult.data.size
         });
       } catch (docError) {
-        logger.warn('Could not verify document content (not critical)', { 
+        console.warn('Could not verify document content (not critical)', { 
           error: docError instanceof Error ? docError.message : 'Unknown error' 
         });
       }
@@ -109,7 +109,7 @@ export async function convertMarkdownToGoogleDoc(
         fileName
       };
     } catch (driveError: any) {
-      logger.error('Error in Google Drive API:', {
+      console.error('Error in Google Drive API:', {
         message: driveError.message,
         status: driveError.status || driveError.code,
         details: driveError.errors || driveError.stack
@@ -117,7 +117,7 @@ export async function convertMarkdownToGoogleDoc(
       throw driveError;
     }
   } catch (error: any) {
-    logger.error('Error in document creation process:', {
+    console.error('Error in document creation process:', {
       message: error.message,
       status: error.status || error.code || 500,
       details: error.errors || error.stack

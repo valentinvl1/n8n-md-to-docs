@@ -5,13 +5,8 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./lib --target node && cp package.json lib/",
-    "build:watch": "bun build ./src/index.ts --outdir ./lib --target node --watch",
-    "serve": "bun run build && firebase emulators:start",
-    "shell": "bun run build && firebase functions:shell",
-    "start": "bun run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log",
+    "build": "bun build ./src/index.ts --outdir ./lib --target node",
+    "start": "bun run build && node lib/index.js",
     "dev": "bun --watch src/index.ts"
   },
   "engines": {

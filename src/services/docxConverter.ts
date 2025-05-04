@@ -56,18 +56,18 @@ function processFormattedText(text: string): TextRun[] {
 export async function convertMarkdownToDocx(markdownContent: string): Promise<Buffer> {
   try {
     // Log sample of the markdown for debugging
-    logger.info('Input markdown sample:', {
+    console.info('Input markdown sample:', {
       sample: markdownContent.substring(0, Math.min(200, markdownContent.length)),
       length: markdownContent.length
     });
 
     // Parse markdown to tokens
     const tokens = marked.lexer(markdownContent);
-    logger.info(`Parsed ${tokens.length} markdown tokens`);
+    console.info(`Parsed ${tokens.length} markdown tokens`);
     
     // Debug first few tokens to understand the structure
     if (tokens.length > 0) {
-      logger.info('First token types:', {
+      console.info('First token types:', {
         types: tokens.slice(0, Math.min(5, tokens.length)).map(t => t.type)
       });
     }
@@ -77,7 +77,7 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
     let consecutiveBreaks = 0;
     
     for (const token of tokens) {
-      logger.info(`Processing token type: ${token.type}`);
+      console.info(`Processing token type: ${token.type}`);
 
       // Handle spacing between different content types
       if (lastTokenType && lastTokenType !== token.type) {
@@ -310,7 +310,7 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
           break;
 
         default:
-          logger.info(`Unhandled token type: ${token.type}`);
+          console.info(`Unhandled token type: ${token.type}`);
           consecutiveBreaks = 0;
           break;
       }
@@ -403,12 +403,12 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
       }],
     });
 
-    logger.info(`Generated DOCX with ${children.length} paragraphs`);
+    console.info(`Generated DOCX with ${children.length} paragraphs`);
     
     // Generate buffer
     return await Packer.toBuffer(doc);
   } catch (error) {
-    logger.error('Error converting markdown to docx:', error);
+    console.error('Error converting markdown to docx:', error);
     throw error;
   }
 } 

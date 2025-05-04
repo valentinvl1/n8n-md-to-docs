@@ -1,6 +1,6 @@
-import { Document, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType, Table, TableRow, TableCell, BorderStyle } from 'docx';
+import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle } from 'docx';
 import { marked } from 'marked';
-import type { Token, Tokens } from 'marked';
+import type { Tokens } from 'marked';
 
 const headingLevelMap = {
   1: HeadingLevel.HEADING_1,

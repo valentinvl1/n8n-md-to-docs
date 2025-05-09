@@ -184,18 +184,20 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
       if (lastTokenType && lastTokenType !== token.type) {
         if (token.type === 'space') {
           consecutiveBreaks++;
-          // Only add extra space if we haven't added too many breaks already
-          if (consecutiveBreaks <= 1) {
+          // Add a paragraph break for each double newline in markdown
+          if (consecutiveBreaks >= 2) {
             children.push(
               new Paragraph({
                 spacing: {
-                  before: 80,
-                  after: 80
+                  before: 120,
+                  after: 120
                 }
               })
             );
+            consecutiveBreaks = 0;
           }
         } else {
+          // Reset consecutive breaks when we encounter non-space content
           consecutiveBreaks = 0;
         }
       }
@@ -269,14 +271,15 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             }
           }
 
+          // Ajouter le paragraphe avec un espacement approprié
           children.push(
             new Paragraph({
               children: paragraphElements,
               spacing: {
                 before: 60,
                 after: 60,
-                line: 300,
-                lineRule: 'auto'
+                line: 360, // Augmenter l'espacement des lignes
+                lineRule: 'exact' // Forcer l'espacement exact
               }
             })
           );

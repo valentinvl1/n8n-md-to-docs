@@ -14,44 +14,63 @@ const headingLevelMap = {
 
 // Helper function to process text with formatting
 function processFormattedText(text: string): TextRun[] {
-  // Process bold, italic, and code formatting
-  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
-  return parts.filter(part => part.trim() !== '').map((part: string) => {
-    // Bold: **text**
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return new TextRun({
-        text: part.slice(2, -2),
-        bold: true,
-        font: 'Arial',
-        size: 24
-      });
+  // Split text by newlines first
+  const lines = text.split('\n');
+  const runs: TextRun[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Process bold, italic, and code formatting for each line
+    const parts = line.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
+    const lineRuns = parts.filter(part => part.trim() !== '').map((part: string) => {
+      // Bold: **text**
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return new TextRun({
+          text: part.slice(2, -2),
+          bold: true,
+          font: 'Arial',
+          size: 24
+        });
+      }
+      // Italic: *text*
+      else if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+        return new TextRun({
+          text: part.slice(1, -1),
+          italics: true,
+          font: 'Arial',
+          size: 24
+        });
+      }
+      // Code: `text`
+      else if (part.startsWith('`') && part.endsWith('`')) {
+        return new TextRun({
+          text: part.slice(1, -1),
+          font: 'Courier New',
+          size: 24
+        });
+      }
+      // Regular text
+      else {
+        return new TextRun({
+          text: part,
+          font: 'Arial',
+          size: 24
+        });
+      }
+    });
+
+    runs.push(...lineRuns);
+
+    // Add a line break after each line except the last one
+    if (i < lines.length - 1) {
+      runs.push(new TextRun({
+        text: '\n',
+        break: 1
+      }));
     }
-    // Italic: *text*
-    else if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
-      return new TextRun({
-        text: part.slice(1, -1),
-        italics: true,
-        font: 'Arial',
-        size: 24
-      });
-    }
-    // Code: `text`
-    else if (part.startsWith('`') && part.endsWith('`')) {
-      return new TextRun({
-        text: part.slice(1, -1),
-        font: 'Courier New',
-        size: 24
-      });
-    }
-    // Regular text
-    else {
-      return new TextRun({
-        text: part,
-        font: 'Arial',
-        size: 24
-      });
-    }
-  });
+  }
+
+  return runs;
 }
 
 // Types d'images supportés par docx

@@ -1,6 +1,7 @@
-import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle } from 'docx';
+import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle, ImageRun } from 'docx';
 import { marked } from 'marked';
 import type { Tokens } from 'marked';
+import { Buffer } from 'buffer';
 
 const headingLevelMap = {
   1: HeadingLevel.HEADING_1,
@@ -51,6 +52,36 @@ function processFormattedText(text: string): TextRun[] {
       });
     }
   });
+}
+
+// Fonction pour extraire les images en base64 du texte
+function extractBase64Images(text: string): { text: string, images: { base64: string, position: number }[] } {
+  const images: { base64: string, position: number }[] = [];
+  const regex = /data:image\/(jpeg|png|gif);base64,([^"\s]+)/g;
+  let match;
+  let processedText = text;
+
+  while ((match = regex.exec(text)) !== null) {
+    const fullMatch = match[0];
+    const base64Data = match[2];
+    const position = match.index;
+    
+    images.push({
+      base64: fullMatch,
+      position: position
+    });
+    
+    // Remplacer l'image par un espace pour maintenir la position
+    processedText = processedText.replace(fullMatch, ' ');
+  }
+
+  return { text: processedText, images };
+}
+
+// Fonction pour convertir une chaîne base64 en Buffer
+function base64ToBuffer(base64String: string): Uint8Array {
+  const base64Data = base64String.split(',')[1];
+  return new Uint8Array(Buffer.from(base64Data, 'base64'));
 }
 
 export async function convertMarkdownToDocx(markdownContent: string): Promise<Buffer> {
@@ -121,12 +152,39 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
           consecutiveBreaks = 0;
           const paragraphToken = token as Tokens.Paragraph;
           
-          // Process formatted text (bold, italic, code)
-          const runs = processFormattedText(paragraphToken.text);
+          // Extraire les images du texte
+          const { text, images } = extractBase64Images(paragraphToken.text);
+          
+          // Traiter le texte formaté
+          const runs = processFormattedText(text);
+          
+          // Créer un tableau pour stocker tous les éléments du paragraphe
+          const paragraphElements: (TextRun | ImageRun)[] = [];
+          
+          // Ajouter les runs de texte
+          paragraphElements.push(...runs);
+          
+          // Ajouter les images
+          for (const image of images) {
+            try {
+              const imageBuffer = base64ToBuffer(image.base64);
+              paragraphElements.push(
+                new ImageRun({
+                  data: imageBuffer,
+                  transformation: {
+                    width: 400,
+                    height: 300
+                  }
+                })
+              );
+            } catch (error) {
+              console.error('Error processing image:', error);
+            }
+          }
 
           children.push(
             new Paragraph({
-              children: runs,
+              children: paragraphElements,
               spacing: {
                 before: 60,
                 after: 60,

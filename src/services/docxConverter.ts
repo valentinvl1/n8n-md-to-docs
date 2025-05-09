@@ -56,6 +56,7 @@ function processFormattedText(text: string): TextRun[] {
 
 // Types d'images supportés par docx
 type SupportedImageType = 'jpg' | 'png' | 'gif' | 'bmp' | 'svg';
+type FallbackImageType = 'jpg' | 'png' | 'gif' | 'bmp';
 
 // Fonction pour valider et normaliser le type d'image
 function normalizeImageType(type: string): SupportedImageType {
@@ -65,6 +66,11 @@ function normalizeImageType(type: string): SupportedImageType {
     return normalizedType as SupportedImageType;
   }
   return 'png'; // Type par défaut si non supporté
+}
+
+// Fonction pour obtenir le type de fallback
+function getFallbackType(type: SupportedImageType): FallbackImageType {
+  return type === 'svg' ? 'png' : type;
 }
 
 // Fonction pour extraire les images en base64 du texte
@@ -191,7 +197,7 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
                   },
                   type: image.type,
                   fallback: {
-                    type: image.type,
+                    type: getFallbackType(image.type),
                     data: imageBuffer
                   }
                 })

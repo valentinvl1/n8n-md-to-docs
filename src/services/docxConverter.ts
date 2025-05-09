@@ -54,22 +54,35 @@ function processFormattedText(text: string): TextRun[] {
   });
 }
 
+// Types d'images supportés par docx
+type SupportedImageType = 'jpg' | 'png' | 'gif' | 'bmp' | 'svg';
+
+// Fonction pour valider et normaliser le type d'image
+function normalizeImageType(type: string): SupportedImageType {
+  const normalizedType = type.toLowerCase();
+  if (normalizedType === 'jpeg') return 'jpg';
+  if (['jpg', 'png', 'gif', 'bmp', 'svg'].includes(normalizedType)) {
+    return normalizedType as SupportedImageType;
+  }
+  return 'png'; // Type par défaut si non supporté
+}
+
 // Fonction pour extraire les images en base64 du texte
-function extractBase64Images(text: string): { text: string, images: { base64: string, position: number, type: string }[] } {
-  const images: { base64: string, position: number, type: string }[] = [];
-  const regex = /data:image\/(jpeg|jpg|png|gif);base64,([^"\s]+)/g;
+function extractBase64Images(text: string): { text: string, images: { base64: string, position: number, type: SupportedImageType }[] } {
+  const images: { base64: string, position: number, type: SupportedImageType }[] = [];
+  const regex = /data:image\/(jpeg|jpg|png|gif|bmp|svg);base64,([^"\s]+)/g;
   let match;
   let processedText = text;
 
   while ((match = regex.exec(text)) !== null) {
     const fullMatch = match[0];
-    const imageType = match[1].toLowerCase(); // jpeg, jpg, png, ou gif
+    const imageType = match[1].toLowerCase();
     const position = match.index;
     
     images.push({
       base64: fullMatch,
       position: position,
-      type: imageType === 'jpg' ? 'jpeg' : imageType // Normaliser jpg en jpeg
+      type: normalizeImageType(imageType)
     });
     
     // Remplacer l'image par un espace pour maintenir la position

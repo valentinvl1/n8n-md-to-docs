@@ -55,20 +55,21 @@ function processFormattedText(text: string): TextRun[] {
 }
 
 // Fonction pour extraire les images en base64 du texte
-function extractBase64Images(text: string): { text: string, images: { base64: string, position: number }[] } {
-  const images: { base64: string, position: number }[] = [];
-  const regex = /data:image\/(jpeg|png|gif);base64,([^"\s]+)/g;
+function extractBase64Images(text: string): { text: string, images: { base64: string, position: number, type: string }[] } {
+  const images: { base64: string, position: number, type: string }[] = [];
+  const regex = /data:image\/(jpeg|jpg|png|gif);base64,([^"\s]+)/g;
   let match;
   let processedText = text;
 
   while ((match = regex.exec(text)) !== null) {
     const fullMatch = match[0];
-    const base64Data = match[2];
+    const imageType = match[1].toLowerCase(); // jpeg, jpg, png, ou gif
     const position = match.index;
     
     images.push({
       base64: fullMatch,
-      position: position
+      position: position,
+      type: imageType === 'jpg' ? 'jpeg' : imageType // Normaliser jpg en jpeg
     });
     
     // Remplacer l'image par un espace pour maintenir la position
@@ -174,6 +175,11 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
                   transformation: {
                     width: 400,
                     height: 300
+                  },
+                  type: image.type,
+                  fallback: {
+                    type: image.type,
+                    data: imageBuffer
                   }
                 })
               );

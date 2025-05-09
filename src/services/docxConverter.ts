@@ -14,6 +14,9 @@ const headingLevelMap = {
 
 // Helper function to process text with formatting
 function processFormattedText(text: string): TextRun[] {
+  // Remplacer les balises <br> par des retours à la ligne
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  
   // Split text by newlines first
   const lines = text.split('\n');
   const runs: TextRun[] = [];

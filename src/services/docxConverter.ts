@@ -104,6 +104,56 @@ function base64ToBuffer(base64String: string): Uint8Array {
   return new Uint8Array(Buffer.from(base64Data, 'base64'));
 }
 
+// Fonction pour calculer les dimensions de l'image en préservant les proportions
+function calculateImageDimensions(base64String: string, maxWidth: number = 400): { width: number, height: number } {
+  try {
+    const base64Data = base64String.split(',')[1];
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // Lire les dimensions de l'image
+    let width = 0;
+    let height = 0;
+    
+    // Pour JPEG
+    if (base64String.includes('image/jpeg')) {
+      let i = 0;
+      while (i < buffer.length) {
+        if (buffer[i] === 0xFF && buffer[i + 1] === 0xC0) {
+          height = buffer.readUInt16BE(i + 5);
+          width = buffer.readUInt16BE(i + 7);
+          break;
+        }
+        i++;
+      }
+    }
+    // Pour PNG
+    else if (base64String.includes('image/png')) {
+      width = buffer.readUInt32BE(16);
+      height = buffer.readUInt32BE(20);
+    }
+    // Pour GIF
+    else if (base64String.includes('image/gif')) {
+      width = buffer.readUInt16LE(6);
+      height = buffer.readUInt16LE(8);
+    }
+    
+    // Si les dimensions n'ont pas pu être lues, utiliser les dimensions par défaut
+    if (width === 0 || height === 0) {
+      return { width: maxWidth, height: maxWidth * 0.75 };
+    }
+    
+    // Calculer les nouvelles dimensions en préservant les proportions
+    const ratio = height / width;
+    const newWidth = Math.min(width, maxWidth);
+    const newHeight = Math.round(newWidth * ratio);
+    
+    return { width: newWidth, height: newHeight };
+  } catch (error) {
+    console.error('Error calculating image dimensions:', error);
+    return { width: maxWidth, height: maxWidth * 0.75 };
+  }
+}
+
 export async function convertMarkdownToDocx(markdownContent: string): Promise<Buffer> {
   try {
     // Log sample of the markdown for debugging
@@ -188,17 +238,29 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
           for (const image of images) {
             try {
               const imageBuffer = base64ToBuffer(image.base64);
-              paragraphElements.push(
-                new ImageRun({
-                  data: imageBuffer,
-                  transformation: {
-                    width: 400,
-                    height: 300
-                  },
-                  type: image.type,
-                  fallback: {
-                    type: getFallbackType(image.type),
-                    data: imageBuffer
+              const dimensions = calculateImageDimensions(image.base64);
+              
+              // Créer un paragraphe centré pour l'image
+              children.push(
+                new Paragraph({
+                  children: [
+                    new ImageRun({
+                      data: imageBuffer,
+                      transformation: {
+                        width: dimensions.width,
+                        height: dimensions.height
+                      },
+                      type: image.type,
+                      fallback: {
+                        type: getFallbackType(image.type),
+                        data: imageBuffer
+                      }
+                    })
+                  ],
+                  alignment: 'center',
+                  spacing: {
+                    before: 120,
+                    after: 120
                   }
                 })
               );

@@ -208,8 +208,8 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             children.push(
               new Paragraph({
                 spacing: {
-                  before: 120,
-                  after: 120
+                  before: 200,
+                  after: 200
                 }
               })
             );
@@ -295,10 +295,10 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
             new Paragraph({
               children: paragraphElements,
               spacing: {
-                before: 60,
-                after: 60,
-                line: 360, // Augmenter l'espacement des lignes
-                lineRule: 'exact' // Forcer l'espacement exact
+                before: 40,
+                after: 40,
+                line: 360,
+                lineRule: 'exact'
               }
             })
           );

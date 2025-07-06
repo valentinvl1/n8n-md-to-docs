@@ -78,10 +78,10 @@ export async function convertMarkdownToGoogleDoc(
       }
 
       const documentUrl = `https://docs.google.com/document/d/${documentId}`;
-      console.info('Document created successfully', { 
-        documentId, 
-        documentUrl, 
-        fileName 
+      console.info('Document created successfully', {
+        documentId,
+        documentUrl,
+        fileName
       });
 
       // Optionally get the document content to verify it's not empty
@@ -90,15 +90,15 @@ export async function convertMarkdownToGoogleDoc(
           fileId: documentId,
           fields: 'id,name,mimeType,size'
         });
-        
+
         console.info('Document verification', {
           name: docResult.data.name,
           mimeType: docResult.data.mimeType,
           size: docResult.data.size
         });
       } catch (docError) {
-        console.warn('Could not verify document content (not critical)', { 
-          error: docError instanceof Error ? docError.message : 'Unknown error' 
+        console.warn('Could not verify document content (not critical)', {
+          error: docError instanceof Error ? docError.message : 'Unknown error'
         });
       }
 

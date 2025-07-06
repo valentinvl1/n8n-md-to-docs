@@ -1,4 +1,4 @@
-import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle, ImageRun, Footer, Header, PageNumber } from 'docx';
+import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle, ImageRun, Footer, Header, PageNumber, AlignmentType } from 'docx';
 import { marked } from 'marked';
 import type { Tokens } from 'marked';
 import { Buffer } from 'buffer';
@@ -578,12 +578,12 @@ export async function convertMarkdownToDocx(markdownContent: string): Promise<Bu
           default: new Footer({
             children: [
               new Paragraph({
-                alignment: 'center',
+                alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun('Page '),
-                  PageNumber.CURRENT,
+                  PageNumber.CURRENT as any,
                   new TextRun(' / '),
-                  PageNumber.TOTAL_PAGES,
+                  PageNumber.TOTAL_PAGES as any,
                 ],
               }),
             ],

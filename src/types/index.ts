@@ -8,6 +8,8 @@ export interface MarkdownRequest {
 export interface GoogleDocResponse {
   documentId: string;
   url: string;
+  docxId?: string;
+  docxUrl?: string;
   status: number;
   fileName: string;
   webhookUrl?: string;

@@ -84,30 +84,6 @@ export async function convertMarkdownToGoogleDoc(
         fileName
       });
 
-      // Also upload the original DOCX file to Drive
-      let docxId: string | undefined;
-      let docxUrl: string | undefined;
-      try {
-        const originalMeta = {
-          name: `${fileName}.docx`,
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        };
-        const originalRes = await drive.files.create({
-          requestBody: originalMeta,
-          media: { mimeType: originalMeta.mimeType, body: Readable.from(docxBuffer) },
-          fields: 'id'
-        });
-        docxId = originalRes.data.id || undefined;
-        if (docxId) {
-          docxUrl = `https://drive.google.com/file/d/${docxId}/view`;
-        }
-        console.info('Original DOCX uploaded', { docxId, docxUrl });
-      } catch (uploadError) {
-        console.warn('Failed to upload DOCX file', {
-          error: uploadError instanceof Error ? uploadError.message : 'Unknown error'
-        });
-      }
-
       // Optionally get the document content to verify it's not empty
       try {
         const docResult = await drive.files.get({
@@ -129,8 +105,6 @@ export async function convertMarkdownToGoogleDoc(
       return {
         documentId,
         url: documentUrl,
-        docxId,
-        docxUrl,
         status: 200,
         fileName
       };
